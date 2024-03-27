@@ -88,10 +88,10 @@ public class PrestamoServicio extends DAO<Prestamo> {
                                                 + "Intentelo de nuevo: ");
                                         
                                         } else {
-                                            throw new Exveption("")
-                                                    
-                                            break;
-                                        }                             
+                                            throw new Exception("Salir del programa");
+                                            
+                                        } 
+                                        break;
                                     }
                                     
                                     if (respuesta1.equalsIgnoreCase("si")) {
