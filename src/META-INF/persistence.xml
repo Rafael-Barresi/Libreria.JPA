@@ -5,10 +5,12 @@
     <class>libreriaJPA.entidades.Autor</class>
     <class>libreriaJPA.entidades.Editorial</class>
     <class>libreriaJPA.entidades.Libro</class>
+    <class>libreriaJPA.entidades.Cliente</class>
+    <class>libreriaJPA.entidades.Prestamo</class>
     <properties>
-      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://127.0.01:3306/libreriajpa?zeroDateTimeBehavior=convertToNull"/>
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/libreriajpa?zeroDateTimeBehavior=convertToNull"/>
       <property name="javax.persistence.jdbc.user" value="root"/>
-      <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
       <property name="javax.persistence.jdbc.password" value="root"/>
       <property name="javax.persistence.schema-generation.database.action" value="create"/>
     </properties>

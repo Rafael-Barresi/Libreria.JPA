@@ -1,120 +1,372 @@
-
 package libreriaJPA.servicios;
 
+import java.util.Optional;
 import java.util.Scanner;
 import libreriaJPA.entidades.Cliente;
+import libreriaJPA.exepciones.MiException;
 import libreriaJPA.persistencia.ClienteDAO;
 
 /**
- *ClienteServicio
- *Esta clase tiene la responsabilidad de llevar adelante las funcionalidades necesarias para
- *administrar clientes (consulta, creación, modificación y eliminación).
+ * Esta clase tiene la responsabilidad de llevar adelante las funcionalidades
+ * necesarias para administrar clientes (consulta, creación, modificación y
+ * eliminación).
+ *
  * @author Rafael
  */
 public class ClienteServicio {
-    
-    private ClienteDAO dao;
-    private Scanner leer;
-    private MisFunciones mf;
-    
-    public ClienteServicio (){
-        
-        this.dao = new ClienteDAO();
+
+    final ClienteDAO clienteDao;
+    final Scanner leer;
+    final MisFunciones mf;
+
+    /**
+     * Constructor que inicializa las dependencias necesarias.
+     */
+    public ClienteServicio() {
+
+        this.clienteDao = new ClienteDAO();
         this.leer = new Scanner(System.in);
         this.mf = new MisFunciones();
     }
-    
+
     /**
-     * Crea un cliente y lo persiste en la base de datos.
+     * Crea un cliente y lo persiste en la base de datos. el parametro recibido
+     * es utilizado cuando crearCliente es llamado desde Crear prestamo cuando
+     * se ingresa el dni y no es encontrado en la base de datos se ofrece crear
+     * uno nuevo y se utiliza el dni ingresado para setear el objeto
+     *
+     * @return Cliente
      */
-    public void crearCliente() {
+    public Cliente crearCliente(Long dniParametro) {
+
+        try {
+            Cliente cliente = new Cliente();
+
+            System.out.println("\n***CARGAR NUEVO CLIENTE***\n");
+
+            String dni;
+
+            // VALIDO QUE NO EXISTA OTRO CLIENTE CON EL MISMO DOCUMENTO.
+            while (true) {
+
+                Long documento;
+                if (dniParametro != null) {
+                    String auxDni = dniParametro.toString();
+                    Optional<Cliente> cOpt = clienteDao.buscarPorDocumento(auxDni);
+
+                    if (cOpt.isPresent()) {
+                        System.out.println("ERROR el cliente ya existe en la base de datos");
+                        break;
+
+                    } else {
+                        cliente.setDocumento(auxDni);
+                        break;
+                    }
+
+                } else {
+                    System.out.println("\nIngrese numero de documento: ");
+
+                    documento = mf.validarLongConLimite(leer, 10000000, 99999999);
+
+                    dni = documento.toString();
+                    Optional<Cliente> clienteOpt = clienteDao.buscarPorDocumento(dni);
+
+                    if (clienteOpt.isPresent()) {
+                        System.out.println("\nYa existe un cliente con ese numero de documento " + "\n"
+                                + "Intentelo de nuevo: ");
+
+                    } else {
+                        cliente.setDocumento(dni);
+                        break;
+                    }
+                }
+            } //FIN WHILE VALIDACION CLIENTE EXISTENTE.
+
+            String nombre;
+            System.out.println("\nIngrese nombre: ");
+            nombre = mf.validarString(leer);
+
+            String apellido;
+            System.out.println("\nIngrese apellido: ");
+            apellido = mf.validarString(leer);
+
+            String telefono;
+            System.out.println("Ingrese telefono: ");
+            Long tel = mf.validarLongConLimite(leer, 100000L, Long.MAX_VALUE);
+            telefono = tel.toString();
+
+            cliente.setApellido(apellido);
+            cliente.setNombre(nombre);
+            cliente.setTelefono(telefono);
+            cliente.setAlta(Boolean.TRUE);
+
+            clienteDao.guardar(cliente);
+
+            //SE BUSCA EL CLIENTE EN LA BASE DE DATOS Y SE DA MENSAJE DE ESTADO.
+            Optional<Cliente> clienteOpt = clienteDao.buscarClientePorId(cliente.getId());
+
+            if (clienteOpt.isPresent()) {
+                System.out.println("\nEl cliente se ha cargado con exito.");
+
+            } else {
+                System.err.println("Error al cargar el cliente: el cliente no se encontró en la base de datos.");
+
+            }
+            return cliente;
+        } catch (IllegalArgumentException e) {
+            System.out.println("ERROR: " + e.getMessage());
+
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Modifica y persiste atributos de objeto Cliente
+     *
+     * @throws MiException
+     * @throws Exception
+     */
+    public void modificarClientel() throws MiException, Exception {
+
+        try {
+
+            String dni;
+            Cliente cliente = new Cliente();
+
+            while (true) {
+
+                Long documento;
+
+                System.out.println("\nIngrese numero de documento: ");
+
+                documento = mf.validarLongConLimite(leer, 10000000, 99999999);
+
+                dni = documento.toString();
+                Optional<Cliente> clienteOpt = clienteDao.buscarPorDocumento(dni);
+
+                if (clienteOpt.isPresent()) {
+
+                    cliente = clienteOpt.get();
+
+                    System.out.println("\nIngrese Nuevo nombre: ");
+                    cliente.setNombre(mf.validarString(leer));
+
+                    System.out.println("\n El estado del alta es: " + cliente.getAlta() + "\n"
+                            + "Desea modificarlo Si o No?: ");
+
+                    String resp = mf.verificarRespuestaPorSiNo(leer);
+
+                    if (resp.equalsIgnoreCase("si")) {
+                        cliente.setAlta(cliente.getAlta() ? Boolean.FALSE : Boolean.TRUE);
+
+                    } else {
+                        clienteDao.editar(cliente);
+                        break;
+                    }
+                }
+                clienteDao.editar(cliente);
+                break;
+            }
+        } catch (MiException e) {
+            System.out.println("ERROR al intentar modificar Editorial. " + e.getMessage());
+        }
+    }
+
+    /**
+     * Modifica y persiste el atributo de alta (Boolean) de un cliente.
+     *
+     * @throws MiException
+     */
+    public void modificarAltaCliente() throws MiException, Exception {
+
+        try {
+
+            Cliente cliente;
+            String dni;
+
+            while (true) {
+
+                Long documento;
+
+                System.out.println("\nIngrese numero de documento: ");
+
+                documento = mf.validarLongConLimite(leer, 10000000, 99999999);
+                dni = documento.toString();
+
+                Optional<Cliente> clienteOpt = clienteDao.buscarPorDocumento(dni);
+
+                if (clienteOpt.isPresent()) {
+                    cliente = clienteOpt.get();
+                    break;
+                } else {
+                    System.out.println("No existe editorial con ese nombre, intentelo de nuevo:");
+                }
+            }//FIN WHILE VALIDACION DE CLIENTE EXISTENTE
+
+            System.out.println("\n CLIENTE: " + cliente.getNombre() + "\n"
+                    + "ESTADO: " + cliente.getAlta() + "\n"
+                    + "Quiere modificarlo? si o no: ");
+            String resp = mf.verificarRespuestaPorSiNo(leer);
+
+            if (resp.equalsIgnoreCase("si")) {
+
+                cliente.setAlta(cliente.getAlta() ? Boolean.FALSE : Boolean.TRUE);
+            } else {
+                return;
+            }
+            //SE PERSISTE EN LA BASE DE DATOS.
+            clienteDao.editar(cliente);
+
+        } catch (MiException e) {
+            System.out.println("ERROR en: ClienteServicio/ModificarAltaCliente. " + e.getMessage());
+        }
+
+    }
+
+    /**
+     * Devuelve un cliente válido para realizar un préstamo, en caso de no
+     * existir ofrece la opción de registrar uno nuevo.
+     *
+     * @return Cliente
+     * @throws Exception
+     */
+    public Cliente validarClienteParaPrestamo() throws Exception {
 
         Cliente cliente = new Cliente();
 
         try {
 
-            System.out.println("\n***CARGAR NUEVO CLIENTE***\n");
+            System.out.println("\nIngrese numero de documento: ");
 
             Long documento;
-            
-            // VALIDO QUE NO EXISTA OTRO CLIENTE CON EL MISMO DOCUMENTO.
+
             while (true) {
 
-                System.out.println("\nIngrese numero de documento: ");
-                documento = mf.validarLongConLimite(leer, 10000000, 99999999);
+                long min = 2000000;
+                long max = 99999999;
 
-                Cliente c1 = dao.buscarPorDocumento(cliente.getDocumento());
+                documento = mf.validarLongConLimite(leer, min, max);
+                leer.nextLine().trim();
+                String dni = documento.toString();
+                Optional<Cliente> clienteOpt = clienteDao.buscarPorDocumento(dni);
 
-                if (c1 != null) {
-                    System.out.println("\nYa existe un cliente con ese numero de documento " + "\n"
-                            + "Intentelo de nuevo: ");
+                if (clienteOpt.isEmpty()) {
+                    System.out.println("\n¿Este es el documento ingresado? " + "\n"
+                            + dni + "\n"
+                            + "Respuesta por si o no:");
+
+                    String respuesta;
+                    respuesta = verificarRespuestaPorSiNo();
+
+                    if (respuesta.equalsIgnoreCase("si")) {
+
+                        System.out.println("\nEl cliente no existe en la libreria, desa registrarlo?");
+
+                        String respuesta1 = verificarRespuestaPorSiNo();
+
+                        if (respuesta1.equalsIgnoreCase("si")) {
+                            cliente = crearCliente(documento);
+                            break;
+                        } else {
+                            break;
+                        }
+
+                    } else {
+                        System.out.println("\n" + "Ingrese numero de documento: ");
+                    }
 
                 } else {
-                    
-                    cliente.setDocumento(documento);
+                    cliente = clienteOpt.get();
+                    System.out.println("\nEl cliente ha sido seleccionado correctamente. ");
                     break;
+                }
+            }//FIN WHILE PRINCIPAL.
+        } catch (Exception e) {
+            System.out.println("\nERROR en la validacion de cliente para prestamo: ClienteServicio_validarClienteParaPrestamo " + "\n" + e.getMessage());
+        }
+        return cliente;
+    }
+
+    /**
+     * Elimina un cliente a eleccion de la base de datos.
+     *
+     * @throws Exception
+     */
+    public void eliminarCliente() throws Exception {
+
+        try {
+
+            Cliente cliente;
+            String dniComp;
+            String dni;
+
+            while (true) {
+
+                Long documento;
+
+                System.out.println("\nIngrese numero de documento: ");
+
+                documento = mf.validarLongConLimite(leer, 10000000, 99999999);
+                dni = documento.toString();
+
+                Optional<Cliente> clienteOpt = clienteDao.buscarPorDocumento(dni);
+
+                if (clienteOpt.isPresent()) {
+                    cliente = clienteOpt.get();
+                    dniComp = cliente.getDocumento();
+                    break;
+
+                } else {
+                    System.out.println("No existe cliente con ese documento, intentelo de nuevo:");
+                }
+            }//FIN WHILE VALIDACION DE CLIENTE EXISTENTE.
+
+            System.out.println("\n CLIENTE: " + cliente.getNombre() + "\n"
+                    + "ESTADO: " + cliente.getAlta() + "\n"
+                    + "Seguro quiere eliminar PERMANENTEMENTE el cliente?si o no: ");
+            String resp = mf.verificarRespuestaPorSiNo(leer);
+
+            if (resp.equalsIgnoreCase("si")) {
+                clienteDao.eliminar(cliente);
+
+                if (clienteDao.buscarPorDocumento(dniComp).isEmpty()) {
+                    System.out.println("\nEl cliente con el numeri de documento: " + dniComp + " a sido eliminado correctamente.");
+
+                } else {
+                    return;
                 }
 
             }
-
-            System.out.println("\nIngrese nombre: ");
-            cliente.setNombre(mf.validarString(leer));
-            
-            System.out.println("\nIngrese apellido: ");
-            cliente.setApellido(mf.validarString(leer));
-            
-            System.out.println("Ingrese telefono: ");
-            Integer telefono = mf.validarIntegerConLimite(leer, 6, 12);
- 
-            String tel = telefono.toString();
-            cliente.setTelefono(tel);
-            
-            cliente.setAlta(Boolean.FALSE);
-            
-            dao.guardar(cliente);
-            
-            //SE BUSCA EL CLIENTE EN LA BASE DE DATOS Y SE DA MENSAJE DE ESTADO.
-            Cliente c1 = dao.buscarClientePorId(cliente.getId());
-            
-            if (c1 != null) {
-                System.out.println("\nEl cliente se ha cargado con exito.");
-                
-            } else {
-                System.out.println("ERROR al cargar cliente.!!!");
-            
-            }
-            
-        } catch (Exception e) {
-            System.out.println("ERROR DE SISTEMA!!!" + e.getMessage());
-        
+        } catch (MiException e) {
+            System.out.println("ERROR no se elimino editorial!!!!" + e.getMessage());
         }
-        
-    }
-    
-    
-    public Cliente buscarClientePorDocumento(Long documento) throws Exception {
-        
-        Cliente cliente = dao.buscarPorDocumento(documento);
-        
-        return cliente;
-    }
-    
-    
 
+    }
+
+    /**
+     * Verifica que la respuesta ingresada sea "si" o "no".
+     *
+     * @return La respuesta verificada.
+     */
+    public String verificarRespuestaPorSiNo() {
+
+        String respuesta;
+
+        while (true) {
+
+            respuesta = mf.validarString(leer);
+
+            if (!respuesta.equalsIgnoreCase("si") && !respuesta.equalsIgnoreCase("no")) {
+                System.out.println("\nDebe indicar si o no " + "\n"
+                        + "Intentelo de nuevo: ");
+
+            } else {
+                break;
+            }
+        }
+        return respuesta;
+    }
 }
-/*
-
-c) Tareas a realizar
-1) Al alumno le toca desarrollar, las siguientes funcionalidades:
-2) Creación de un Cliente nuevo
-3) Crear entidad Préstamo
-4) Registrar el préstamo de un libro.
-5) Devolución de un libro
-6) Búsqueda de todos los préstamos de un Cliente.
-• Agregar validaciones a todas las funcionalidades de la aplicación:
-• Validar campos obligatorios.
-• No ingresar datos duplicados.
-• No generar condiciones inválidas. Por ejemplo, no se debe permitir prestar más
-ejemplares de los que hay, ni devolver más de los que se encuentran prestados.
-No se podrán prestar libros con fecha anterior a la fecha actual, etc.
-*/

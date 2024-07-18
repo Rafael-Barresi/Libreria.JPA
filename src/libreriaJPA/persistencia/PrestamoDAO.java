@@ -1,136 +1,147 @@
-
 package libreriaJPA.persistencia;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import javax.persistence.NoResultException;
-import libreriaJPA.entidades.Libro;
 import libreriaJPA.entidades.Prestamo;
+import libreriaJPA.exepciones.MiException;
 
 /**
- *
- * @author Rafael
+ * Clase PrestamoDAO que extiende de DAO<Prestamo> para realizar operaciones de
+ * persistencia relacionadas con la entidad Prestamo. Incluye métodos para guardar,
+ * editar, eliminar, dar de alta y dar de baja préstamos, así como para buscar préstamos
+ * por su ID, cliente o fecha e ISBN.
+ * 
+ * @autor Rafael
  */
 public class PrestamoDAO extends DAO<Prestamo> {
-    
-     @Override
-    public void guardar (Prestamo prestamo) {
+
+    @Override
+    public void guardar(Prestamo prestamo) {
         super.guardar(prestamo);
     }
-    
+
     @Override
-    public void editar (Prestamo prestamo) {
+    public void editar(Prestamo prestamo) {
         super.editar(prestamo);
     }
-    
+
     @Override
-    public void eliminar (Prestamo prestamo) {
+    public void eliminar(Prestamo prestamo) {
         super.eliminar(prestamo);
     }
-    
+
     @Override
-    public void setAlta (Prestamo prestamo) throws Exception {
+    public void setAlta(Prestamo prestamo) {
         super.setAlta(prestamo);
     }
-    
+
     @Override
-    public void setBaja (Prestamo prestamo) throws Exception {
+    public void setBaja(Prestamo prestamo) {
         super.setBaja(prestamo);
     }
+
     /**
-     * Busca y Devuelve objeto Prestamo por id.
-     * @param id
-     * @return
-     * @throws Exception 
+     * Busca y devuelve un Prestamo por su ID.
+     *
+     * @param id El ID del préstamo a buscar.
+     * @return Un Optional<Prestamo> que contiene el préstamo si se encuentra, o vacío si no.
+     * @throws MiException Si el ID proporcionado es nulo.
      */
-    public Prestamo buscarPrestamoPorId (Integer id) throws Exception {
-        
-        Prestamo prestamo = null;
-        
+    public Optional<Prestamo> buscarPrestamoPorId(Integer id) throws Exception {
+
+        if (id == null) {
+            throw new MiException("\nDebe ingresar un id. PrestamoDao/buscarPrestamoPorId   !!!");
+        }
+
         try {
-            
-            if (id == null) {
-                throw new Exception ("\nDebe ingresar un id.!!!");
-            }
+
             conectar();
-            prestamo = em.find(Prestamo.class, id); 
-            
+
+            Prestamo prestamo = em.find(Prestamo.class, id);
+            if (prestamo != null) {
+                return Optional.of(prestamo);
+            } else {
+                return Optional.empty();
+            }
+
         } catch (NoResultException e) {
-            System.out.println("\nNo se encontro cliente con ese id.!!!");
-        
+            return Optional.empty();
         } finally {
             desconectar();
         }
-        
-        return prestamo;
     }
-    
+
     /**
-     * Busca todos los prestamos de un cliente devuelve List.
-     * @param idCliente
-     * @return
-     * @throws Exception 
+     * Busca y devuelve una lista de Prestamos de un cliente por su ID.
+     *
+     * @param idCliente El ID del cliente cuyos préstamos se buscan.
+     * @return Un Optional<List<Prestamo>> que contiene la lista de préstamos si se encuentran, o vacío si no.
+     * @throws Exception Si el ID del cliente proporcionado es nulo.
      */
-    public List<Prestamo> buscarPrestamosPorcliente (Integer idCliente) throws Exception {
-        
-        List<Prestamo> prestamos = null;
-        
+    public Optional<List<Prestamo>> buscarPrestamosPorcliente(Integer idCliente) throws Exception {
+
+        if (idCliente == null) {
+            throw new Exception("\nDebe indicar el id de un cliente.!!!");
+        }
+
         try {
-            
-            if (idCliente == null) {
-                throw new Exception("\nDebe indicar el id de un cliente.!!!");
-            }
-            
+            List<Prestamo> prestamos = null;
+
             conectar();
-            
-            prestamos = em.createQuery("SELECT p FROM Prestamo p JOIN p.cliente c WHERE c.id LIKE :idCliente")
+
+            prestamos = em.createQuery("SELECT p FROM Prestamo p JOIN p.cliente c WHERE c.id = :idCliente")
                     .setParameter("idCliente", idCliente)
                     .getResultList();
-            
+
+            if (prestamos != null) {
+                return Optional.of(prestamos);
+            } else {
+                return Optional.empty();
+            }
+
         } catch (NoResultException e) {
-            System.out.println("\nEl cliente no tiene prestamos.");
-            
+            return Optional.empty();
+
         } finally {
             desconectar();
         }
-        
-        return prestamos;
     }
-    
+
     /**
-     * Busca prestamos cuya fecha de devolucion sean menor a la fecha de prestamo solicitado.
-     * @param fechaPrestamo
-     * @param isbn
-     * @return
-     * @throws Exception 
+     * Busca y devuelve una lista de Prestamos cuya fecha de devolución es menor a la fecha de préstamo solicitada
+     * y cuyo ISBN del libro coincide con el proporcionado.
+     *
+     * @param fechaPrestamo La fecha de préstamo a comparar.
+     * @param isbn El ISBN del libro prestado.
+     * @return Un Optional<List<Prestamo>> que contiene la lista de préstamos si se encuentran, o vacío si no.
+     * @throws MiException Si la fecha de préstamo proporcionada es nula.
      */
-    public List<Prestamo> buscarPrestamoPorFechaIsbn (Date fechaPrestamo, Long isbn) throws Exception {
-        
-        List<Prestamo> prestamos = null;
-        
+    public Optional<List<Prestamo>> buscarPrestamoPorFechaIsbn(Date fechaPrestamo, Long isbn) throws Exception {
+
+        if (fechaPrestamo == null) {
+            throw new MiException("\nDebe ingresar una fecha de prestamo.!!!");
+        }
+
         try {
-            
-            if (fechaPrestamo == null) {
-                throw new Exception ("\nDebe ingresar una fecha de prestamo.!!!");
-            }
-            
+
             conectar();
-            
-            prestamos =  em.createQuery("SELECT p FROM Prestamo p "
-                                      + "JOIN p.libro l "
-                                      + "WHERE p.fechaDevolucion < :fechaPrestamo "
-                                      + "AND l.isbn = :isbn")
+
+            List<Prestamo> prestamos = em.createQuery("SELECT p FROM Prestamo p "
+                    + "JOIN p.libro l "
+                    + "WHERE p.fechaDevolucion < :fechaPrestamo "
+                    + "AND l.isbn = :isbn")
                     .setParameter("fechaPrestamo", fechaPrestamo)
                     .setParameter("isbn", isbn)
                     .getResultList();
-            
-        } catch (NoResultException e) {
-            System.out.println("\nNo se encontraron coincidencias en la base de datos.!!!");
-            
+
+            return prestamos.isEmpty() ? Optional.empty() : Optional.of(prestamos);
+
         } finally {
             desconectar();
         }
-        
-        return prestamos;
+
     }
+
 }

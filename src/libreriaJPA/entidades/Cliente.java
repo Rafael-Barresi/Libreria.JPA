@@ -21,7 +21,7 @@ public class Cliente implements Serializable, ConBooleano {
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     protected Integer id;
     @Column (unique = true)
-    protected Long documento;
+    protected String documento;
     protected String nombre;
     protected String apellido;
     protected String telefono;
@@ -30,7 +30,7 @@ public class Cliente implements Serializable, ConBooleano {
     public Cliente() {
     }
 
-    public Cliente(Integer id, Long documento, String nombre, String apellido, String telefono, Boolean alta) {
+    public Cliente(Integer id, String documento, String nombre, String apellido, String telefono, Boolean alta) {
         this.id = id;
         this.documento = documento;
         this.nombre = nombre;
@@ -47,11 +47,11 @@ public class Cliente implements Serializable, ConBooleano {
         this.id = id;
     }
 
-    public Long getDocumento() {
+    public String getDocumento() {
         return documento;
     }
 
-    public void setDocumento(Long documento) {
+    public void setDocumento(String documento) {
         this.documento = documento;
     }
 

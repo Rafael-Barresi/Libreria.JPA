@@ -1,212 +1,303 @@
-
 package libreriaJPA.servicios;
 
+import java.util.Optional;
 import java.util.Scanner;
-import javax.persistence.NoResultException;
 import libreriaJPA.entidades.Editorial;
+import libreriaJPA.exepciones.MiException;
 import libreriaJPA.persistencia.DAO;
+import libreriaJPA.persistencia.EditorialDAO;
 
 /**
+ * Servicio para la gestión de editoriales.
+ * Esta clase se encarga de las operaciones CRUD relacionadas con las editoriales.
  *
  * @author Rafael
  */
 public class EditorialServicio extends DAO<Editorial> {
-    
-    private MisFunciones mf;
-    private Scanner leer;
-    
-    public EditorialServicio () {
+
+    final EditorialDAO editorialDao;
+    final MisFunciones mf;
+    final Scanner leer;
+
+    public EditorialServicio() {
+        this.editorialDao = new EditorialDAO();
         this.mf = new MisFunciones();
         this.leer = new Scanner(System.in);
     }
-    
-    public Editorial buscarEditorialPorNombre (String nombre)throws NoResultException, Exception{
-        
-        Editorial editorial = new Editorial();
-        
-        try {
-            if (nombre == null) {
-                throw new Exception("\nDebe ingresar un nombre.");
-            }
-           conectar();
-            
-           editorial = (Editorial) em.createQuery("SELECT a FROM Editorial a WHERE a.nombre LIKE :nombre")
-                   .setParameter("nombre", nombre)
-                   .getSingleResult();
-           
-            desconectar();
-            
-        } catch (NoResultException e ) {
-            return null;
-        }
-        
-        return editorial;
-    }
-    
-    public Editorial crearAutor () throws Exception{
-        
+
+    /**
+     * Crea una nueva editorial y la persiste en la base de datos.
+     *
+     * @return Editorial creada
+     * @throws Exception Si ocurre un error durante la creación
+     */
+    public Editorial crearEditorial() throws Exception {
+
         System.out.println("\n***CREAR EDITORIAL***\n");
-        
-        Editorial editorial;
-                
+
+        Editorial editorial = new Editorial();
+
         try {
-           
-            System.out.println("Ingrese nombre: ");     
-            editorial = new Editorial();
-            editorial.setNombre(mf.validarString(leer));
+
+            while (true) {
+                System.out.println("\nIngrese nombre: ");
+                String nombre = mf.validarString(leer);
+
+                Optional<Editorial> editorialOpt = editorialDao.buscarEditorialPorNombre(nombre);
+
+                if (editorialOpt.isPresent()) {
+                    System.out.println("\nExiste una editorial con ese nombre intentelo de nuevo");
+
+                } else {
+                    editorial.setNombre(nombre);
+                    break;
+                }
+            } //FIN WHILE VALIDACION
             editorial.setAlta(true);
-            
+
             guardar(editorial);
-                    
-        } catch (Exception e) {
-            return null;
+
+        } catch (MiException e) {
+            System.out.println("ERROR al cargar la Editorial" + e.getMessage());
         }
-        
         return editorial;
     }
-    
-    public void modificarEditorial () throws Exception {
-        
-        try {
-            
-            System.out.println("\nIngrese el nombre de la editorial que desea modificar: ");
-            
-            String nombre = mf.validarString(leer);
-            
-            Editorial editorial = buscarEditorialPorNombre(nombre);
-            
-            if (editorial != null) {
-                
-                System.out.println("\nIngrese el nuevo nombre: ");
-                
-                editorial.setNombre(mf.validarString(leer));
-                editar(editorial);
-            
-            } else {
-                System.out.println("La editorial ingresada no existe en la base de datos.!!");
-            }
-              
-        } catch (NoResultException e) {
-            throw e;
-        }
-    }
-    
-    public void modificarAltaEditorial() throws Exception {
-        
-        try {
-            
-            System.out.println("\nIngrese el nombre de la editorial a modificar: ");
-            String alta = mf.validarString(leer);
-            
-            Editorial editorial = buscarEditorialPorNombre(alta);
-            
-            if (editorial != null) {
-                
-                System.out.println("Ingrese 1 para dar de alta o 2 para dar de baja: ");
-                int opc = mf.validarIntegerConLimite(leer, 1, 2);
-                
-                if (opc == 1) {
-                    setAlta(editorial);
-                    
-                    if (editorial.getAlta()) {
-                        System.out.println("\nSe modifico el atributo con exito!!!");
-                    }
-                    
-                } else {
-                    setBaja(editorial);
-                    
-                    if (!editorial.getAlta()) {
-                        System.out.println("\nSe modifico el atributo con exito!!!");
-                    }
-                }
-                
-            } else {
-                
-                System.out.println("\nLa editorial busacada no existe en la base de datos.!!");
-            }  
-            
-        } catch (Exception e) {
-            throw e;
-        }
-        
-    }
-    
-    public void eliminarEditorial () throws Exception{
-        
-        try {
-            
-            System.out.println("\nIngrese el nombre de la editorial que desea eliminar:");
-            String nombre = mf.validarString(leer);
-            
-            Editorial aux = buscarEditorialPorNombre(nombre);
-            
-            if (aux == null){
-                System.out.println("\nNo existe Editorial con ese nombre en la base de datos");
-                return;
-            }
-            
-            conectar();
-            
-            Editorial editorial = em.find(Editorial.class, aux.getId());
-            
-            if (editorial != null) {
-                
-                eliminar(editorial);
-       
-            } else {
-                
-                System.out.println("\nLa editorial buscada no existe en la base de datos");
-                
-            }
-            
-            
-        } catch (NoResultException e) {
-            throw e;
-            
-        } finally {
-            desconectar();
-    }
-        
-    }
-    
-    public Editorial manejarEditorialInexistente() throws Exception {
 
-        Editorial editorial = null;
+    /**
+     * Modifica los atributos de una editorial existente y los persiste.
+     *
+     * @throws MiException Si ocurre un error durante la modificación
+     */
+    public void modificarEditorial() throws MiException {
 
         try {
 
-            System.out.println("\nLa editorial ingresada no existe desea crearlo?" + "\n"
-                    + "Si O No:  ");
-            String respuesta;
-            //Valido respuesta si o no.
             while (true) {
 
-                respuesta = mf.validarString(leer);
+                System.out.println("\nIngrese el nombre de la editorial que desea modificar: ");
 
-                if (respuesta.equalsIgnoreCase("si") || respuesta.equalsIgnoreCase("no")) {
+                String nombre = mf.validarString(leer);
+                Optional<Editorial> editorialOpt = editorialDao.buscarEditorialPorNombre(nombre);
+
+                if (editorialOpt.isPresent()) {
+                    Editorial editorial = editorialOpt.get();
+                    editorial.setNombre(nombre);
+
+                    System.out.println("\n El estado del alta es: " + editorial.getAlta() + "\n"
+                            + "Desea modificarlo Si o No?: ");
+
+                    String resp = mf.verificarRespuestaPorSiNo(leer);
+
+                    if (resp.equalsIgnoreCase("si")) {
+                        if (editorial.getAlta()) {
+                            editorial.setAlta(Boolean.FALSE);
+                        } else {
+                            editorial.setAlta(Boolean.TRUE);
+                        }
+                    } else {
+                        return;
+                    }
+
+                    editorialDao.editar(editorial);
                     break;
 
                 } else {
+                    System.out.println("La editorial seleccionada no existe en la base de datos");
+                }
+            }
+        } catch (MiException e) {
+            System.out.println("ERROR al intentar modificar Editorial. " + e.getMessage());
+        }
+    }
 
-                    System.out.println("ERROR: La respuesta esta fuera de los parametros.");
-                    leer.nextLine();
+    /**
+     * Modifica el estado de alta de una editorial existente por ID y la persiste.
+     *
+     * @param id ID de la editorial a modificar
+     * @throws MiException Si ocurre un error durante la modificación
+     */
+    public void modificarAltaEditorialLibro(Integer id) throws MiException {
+
+        if (id == null) {
+            throw new MiException("ERROR, debe indicar un dato de tipo Integer.");
+        }
+
+        try {
+
+            Editorial editorial;
+
+            while (true) {
+
+                Optional<Editorial> editorialOpt = editorialDao.buscarEditorialPorId(id);
+
+                if (editorialOpt.isPresent()) {
+                    editorial = editorialOpt.get();
+                    break;
+
+                } else {
+                    System.out.println("No existe editorial con ese nombre, intentelo de nuevo:");
+                }
+            }
+            System.out.println("\n*************** MODIFICAR EDITORIAL DE LIBRO ******************");
+            System.out.println("\nIngrese nuevo nombre");
+            String nombre = mf.validarString(leer);
+            editorial.setNombre(nombre);
+
+            System.out.println("\n EDITORIAL: " + editorial.getNombre() + "\n"
+                    + " ESTADO: " + editorial.getAlta() + "\n"
+                    + " Quiere modificarlo? si o no: ");
+            String resp = mf.verificarRespuestaPorSiNo(leer);
+
+            if (resp.equalsIgnoreCase("si")) {
+
+                editorial.setAlta(editorial.getAlta() ? Boolean.FALSE : Boolean.TRUE);
+            } else {
+                return;
+            }
+            //SE PERSISTE EN LA BASE DE DATOS.
+            System.out.println("\nSe modifico la editorial con exito");
+            editorialDao.editar(editorial);
+
+        } catch (MiException e) {
+            System.out.println("ERROR en: EditorialServicio/ModificarAlta. " + e.getMessage());
+        }
+
+    }
+
+    /**
+     * Elimina una editorial existente de la base de datos.
+     *
+     * @throws Exception Si ocurre un error durante la eliminación
+     */
+    public void eliminarEditorial() throws Exception {
+
+        try {
+
+            Editorial editorial;
+            String nombreComp;
+            while (true) {
+
+                System.out.println("\nIngrese el nombre de la editorial a eliminar: ");
+                String nombre = mf.validarString(leer);
+
+                Optional<Editorial> editorialOpt = editorialDao.buscarEditorialPorNombre(nombre);
+
+                if (editorialOpt.isPresent()) {
+                    editorial = editorialOpt.get();
+                    nombreComp = editorial.getNombre();
+                    break;
+
+                } else {
+                    System.out.println("No existe editorial con ese nombre, intentelo de nuevo:");
+                }
+            }//FIN WHILE VALIDACION EDITORIAL.
+
+            System.out.println("\n EDITORIAL: " + editorial.getNombre() + "\n"
+                    + "ESTADO: " + editorial.getAlta() + "\n"
+                    + "Seguro quiere eliminar PERMANENTEMENTE la Editorial?si o no: ");
+            String resp = mf.verificarRespuestaPorSiNo(leer);
+
+            if (resp.equalsIgnoreCase("si")) {
+                editorialDao.eliminar(editorial);
+
+                if (editorialDao.buscarEditorialPorNombre(nombreComp).isEmpty()) {
+                    System.out.println("\nLa editorial  " + nombreComp + " a sido eliminada correctamente.");
+
+                } else {
+                    return;
                 }
 
             }
-
-            if (respuesta.equalsIgnoreCase("si")) {
-                editorial = crearAutor();
-
-            } else {
-                editorial = null;
-            }
-
-        } catch (Exception e) {
-            throw e;
+        } catch (MiException e) {
+            System.out.println("ERROR no se elimino editorial!!!!" + e.getMessage());
         }
 
-        return editorial;
     }
 
-    
+    /**
+     * Carga y devuelve una editorial, permitiendo su creación si no existe.
+     *
+     * @return Editorial cargada o creada
+     * @throws Exception Si ocurre un error durante la carga o creación
+     */
+    public Editorial cargarEditorialLibro() throws Exception {
+
+        try {
+            Editorial editorial = new Editorial();
+
+            while (true) {
+
+                boolean banderaId = false, banderaEntrada = false;
+                Integer id;
+                System.out.println("\nIngrese el nombre o el id de la Editorial: ");
+                String entrada = leer.nextLine();
+
+                if (entrada.matches("\\d+")) {
+                    id = Integer.valueOf(entrada);
+
+                    Optional<Editorial> editorialOptId = editorialDao.buscarEditorialPorId(id);
+
+                    if (editorialOptId.isPresent()) {
+                        editorial = editorialOptId.get();
+                        banderaId = true;
+                    }
+                } else {
+
+                    Optional<Editorial> editorialOptNombre = editorialDao.buscarEditorialPorNombre(entrada);
+                    if (editorialOptNombre.isPresent()) {
+                        editorial = editorialOptNombre.get();
+                        banderaEntrada = true;
+                    }
+                }
+                if (!banderaId && !banderaEntrada) {
+                    System.out.println("\nNo se encontro editorial con los siguentes datos: " + entrada + "\n"
+                            + "Son coresctos los datos ibgresados? si o no: ");
+                    String resp = mf.verificarRespuestaPorSiNo(leer);
+
+                    if (resp.equalsIgnoreCase("si")) {
+                        editorial = crearEditorial();
+                        return editorial;
+                    } else {
+                        System.out.println("Intentelo de nuevo.");
+                    }
+                } else {
+                    break;
+                }
+            }
+            return editorial;
+        } catch (MiException e) {
+            System.out.println("ERROR al crear editorial para libro. " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Busca una editorial por su ID.
+     * Este método se usa en LibroServicio para modificar la editorial de un libro determinado.
+     *
+     * @param id ID de la editorial a buscar
+     * @return Editorial encontrada o null si no se encuentra
+     * @throws MiException Si ocurre un error durante la búsqueda
+     */
+public Editorial buscarEditorial(Integer id) throws MiException {
+
+    if (id == null) {
+        throw new MiException("ERROR debe indicar un dato de tipo Integer.");
+    }
+
+    try {
+        Optional<Editorial> editorialOpt = editorialDao.buscarEditorialPorId(id);
+
+        if (editorialOpt.isPresent()) {
+            return editorialOpt.get();
+        } else {
+            return null; // Maneja el caso donde no se encuentra la editorial
+        }
+
+    } catch (MiException e) {
+        System.out.println("\nERROR al modificar la editorial del libro!!!");
+        return null;
+    }
+}
+
 }

@@ -1,92 +1,98 @@
-
 package libreriaJPA.persistencia;
 
+import java.util.Optional;
 import javax.persistence.NoResultException;
 import libreriaJPA.entidades.Cliente;
+import libreriaJPA.exepciones.MiException;
 
 /**
- *
+ * Clase ClienteDAO que extiende de DAO<Cliente> para realizar operaciones de
+ * persistencia relacionadas con la entidad Cliente. Incluye métodos para guardar,
+ * editar, eliminar, dar de alta y dar de baja clientes, así como para buscar clientes
+ * por su ID o documento.
  * @author Rafael
  */
 public class ClienteDAO extends DAO<Cliente> {
-    
+
     @Override
-    public void guardar (Cliente cliente) {
+    public void guardar(Cliente cliente) {
         super.guardar(cliente);
     }
-    
+
     @Override
-    public void editar (Cliente cliente) {
+    public void editar(Cliente cliente) {
         super.editar(cliente);
     }
-    
+
     @Override
-    public void eliminar (Cliente cliente) {
+    public void eliminar(Cliente cliente) {
         super.eliminar(cliente);
     }
-    
+
     @Override
-    public void setAlta (Cliente cliente) throws Exception {
+    public void setAlta(Cliente cliente) {
         super.setAlta(cliente);
     }
-    
+
     @Override
-    public void setBaja (Cliente cliente) throws Exception {
+    public void setBaja(Cliente cliente) {
         super.setBaja(cliente);
+    }
+
+    /**
+     * Busca y devuelve Cliente por id.
+     *
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    public Optional<Cliente> buscarClientePorId(Integer id) throws MiException {
+
+        if (id == null) {
+            throw new MiException("\nDebe ingresar un id.!!!");
+        }
+
+        try {
+            conectar();
+
+           Cliente cliente = em.find(Cliente.class, id);
+
+            return Optional.of(cliente);
+
+        } catch (NoResultException e){
+            return Optional.empty();
+        } finally {
+            desconectar();
+        }
     }
     
     /**
-     * Busca y devuelve Cliente por id.
-     * @param id
-     * @return
+     * Busca un cliente por su numero de documento el cual recibe por parametros.
+     * @param documento
+     * @return Otional<Cliente>
      * @throws Exception 
      */
-    public Cliente buscarClientePorId (Integer id) throws Exception{
-        
-        Cliente cliente = null;
-        
-        try {
-            
-            if (id == null) {
-                throw new Exception ("\nDebe ingresar un id.!!!");
-            }
-            conectar();
-            
-              cliente = em.find(Cliente.class, id);    
-            
-        } catch (NoResultException e) {
-            System.out.println("\nNo se encontro cliente con ese id.!!!");
-        
-        } finally {
-            desconectar();
+    public Optional<Cliente> buscarPorDocumento(String documento) throws Exception {
+
+        if (documento == null) {
+            throw new MiException("\nDebe indicar un numero de documento.!!! RUTA: ClienteDao_buscarPorDocumento");
         }
-        
-        return cliente;
-    }
-    
-    public Cliente buscarPorDocumento (Long documento) throws Exception {
-        
-        Cliente cliente = null;
-        
+
         try {
-            
-            if (documento == null) {
-                throw new Exception ("\nDebe indicar un numero de documento.!!!");
-            }
+
             conectar();
-            
-            cliente = (Cliente) em.createQuery("SELECT c FROM Cliente c WHERE c.documento LIKE :documento")
+
+            Cliente cliente = (Cliente) em.createQuery("SELECT c FROM Cliente c WHERE c.documento = :documento")
                     .setParameter("documento", documento)
                     .getSingleResult();
-            
+
+            return Optional.of(cliente);
+
         } catch (NoResultException e) {
-            System.out.println("\nNo se encontro ningun cliente con ese numero de documento.");
-            
+            return Optional.empty();
         } finally {
             desconectar();
         }
-        
-        return cliente;
+
     }
-    
 }

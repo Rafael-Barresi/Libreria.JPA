@@ -7,16 +7,13 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 
 /**
  *Entidad Préstamo
- *La entidad préstamo modela los datos de un préstamo de un libro. Esta entidad registra la
- *fecha en la que se efectuó el préstamo y la fecha en la que se devolvió el libro. Esta
- *entidad también registra el libro que se llevo en dicho préstamo y quien fue el cliente al
- *cual se le prestaron. 
+ *modela objetos Prestamo
  * @author Rafael
  */
 @Entity
@@ -29,13 +26,15 @@ public class Prestamo implements Serializable, ConBooleano {
     protected Date fechaPrestamo;
     @Temporal(javax.persistence.TemporalType.DATE)
     protected Date fechaDevolucion;
-    @OneToMany
+    @OneToOne
     protected Libro libro;
     @OneToOne
+    @ManyToOne
     protected Cliente cliente;
     protected Boolean alta;
 
     public Prestamo() {
+        this.fechaPrestamo = new Date();
     }
 
     public Prestamo(Integer id, Date fechaPrestamo, Date fechaDevolucion, Libro libro, Cliente cliente) {

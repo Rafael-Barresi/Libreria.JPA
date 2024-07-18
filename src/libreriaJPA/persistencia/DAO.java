@@ -1,4 +1,3 @@
-
 package libreriaJPA.persistencia;
 
 import javax.persistence.EntityManager;
@@ -7,35 +6,51 @@ import javax.persistence.Persistence;
 import libreriaJPA.entidades.ConBooleano;
 
 /**
+ * Clase genérica DAO que proporciona métodos básicos para realizar operaciones
+ * de persistencia con la base de datos. Esta clase puede manejar cualquier tipo
+ * de entidad gracias al uso de generics.
  *
- * @author Rafael
- * @param <T>
+ * @param <T> Tipo de la entidad gestionada por este DAO.
+ * @autor Rafael
  */
 public class DAO<T> {
 
-    /*
-    <T> Declaramos que es generico esto significa que puede recibir cualquier tipo
-    de objetos para los metodos creados dentro de la clase DAO.
-    EMF creada de manera que no se pueda alterar a travez de los hijos de clase
-    */
+    /**
+     * EntityManagerFactory utilizado para crear instancias de EntityManager.
+     * Este es final para asegurar que no puede ser alterado por las subclases.
+     */
     protected final EntityManagerFactory EMF = Persistence.createEntityManagerFactory("LibrosJPAPU");
+
+    /**
+     * EntityManager utilizado para interactuar con la base de datos.
+     */
     protected EntityManager em = EMF.createEntityManager();
-    
-    /*Verificamos que si conexion es falso se genera la misma.*/
-    protected void conectar(){
+
+    /**
+     * Conecta a la base de datos inicializando el EntityManager si no está ya
+     * abierto.
+     */
+    protected void conectar() {
         if (!em.isOpen()) {
             em = EMF.createEntityManager();
         }
     }
-    
-    /*si la conexion esta abierta la cerramos.*/
-    protected void desconectar(){
+
+    /**
+     * Desconecta de la base de datos cerrando el EntityManager si está abierto.
+     */
+    protected void desconectar() {
         if (em.isOpen()) {
             em.close();
         }
     }
-    
-    protected void guardar (T objeto) {
+
+    /**
+     * Guarda un objeto en la base de datos.
+     *
+     * @param objeto El objeto a guardar.
+     */
+    protected void guardar(T objeto) {
         //conectamos a la base de datos
         conectar();
         //Iniciamos la transaccion.
@@ -45,9 +60,14 @@ public class DAO<T> {
         //Commit confirmamos la persistencia del objeto.
         em.getTransaction().commit();
         //cerramos conexion.
-        desconectar();    
+        desconectar();
     }
 
+    /**
+     * Edita un objeto existente en la base de datos.
+     *
+     * @param objeto El objeto a editar.
+     */
     protected void editar(T objeto) {
         //conectamos a la base de datos
         conectar();
@@ -60,55 +80,62 @@ public class DAO<T> {
         //Desconectamos de la base de datos.
         desconectar();
     }
-    
+
+    /**
+     * Elimina un objeto de la base de datos.
+     *
+     * @param objeto El objeto a eliminar.
+     */
     protected void eliminar(T objeto) {
-        //conectamos a la base de datos
         conectar();
-        //Iniciamos la transaccion.
         em.getTransaction().begin();
-        //instruccion de remover
+
+        if (!em.contains(objeto)) {
+            objeto = em.merge(objeto); // Asegura que la entidad esté gestionada
+        }
         em.remove(objeto);
-        //commit confirmamos la eliminacion.
         em.getTransaction().commit();
-        
         desconectar();
     }
-    
-    protected void setAlta(T objeto) throws Exception {
-        
-        try{
-            
-            if (objeto == null) {
-                throw new Exception("\nDebe indicar un objeto!");
-            }
-            
+
+    /**
+     * Establece el estado de "alta" de un objeto que implementa ConBooleano a
+     * verdadero.
+     *
+     * @param objeto El objeto a actualizar.
+     * @throws IllegalArgumentException Si el objeto es nulo o no implementa
+     * ConBooleano.
+     */
+    protected void setAlta(T objeto) throws IllegalArgumentException {
+
+        if (objeto == null) {
+            throw new IllegalArgumentException("Debe indicar un objeto.");
+        }
+
         if (objeto instanceof ConBooleano) {
             ConBooleano aux = (ConBooleano) objeto;
-            
-            aux.setAlta(true);     
-            editar(objeto);    
-        } 
-        }catch (Exception e) {
-            throw e;
+
+            aux.setAlta(true);
+            editar(objeto);
         }
     }
     
-    protected void setBaja (T objeto) throws Exception {
-        
-        try {
-            
-            if (objeto == null) {
-                throw new Exception("\nDebe indicar un objeto.");
-            }
-            
-            if (objeto instanceof ConBooleano) {
-                ConBooleano aux = (ConBooleano) objeto;
-               
-                aux.setAlta(false);
-                editar(objeto);
-            }
-        } catch (Exception e) {
-            throw e;
+     /**
+     * Establece el estado de "baja" de un objeto que implementa ConBooleano a falso.
+     *
+     * @param objeto El objeto a actualizar.
+     * @throws IllegalArgumentException Si el objeto es nulo o no implementa ConBooleano.
+     */
+    protected void setBaja(T objeto) throws IllegalArgumentException {
+
+        if (objeto == null) {
+            throw new IllegalArgumentException("Debe indicar un objeto.");
+        }
+
+        if (objeto instanceof ConBooleano) {
+            ConBooleano aux = (ConBooleano) objeto;
+            aux.setAlta(false);
+            editar(objeto);
         }
     }
 }
