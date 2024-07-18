@@ -175,7 +175,7 @@ public class LibroServicio {
                             }
                             banderaEntrada = true;
                         }
-                    }
+                    } 
                     if (!banderaISBN && !banderaEntrada) {
                         System.out.println("\nNo se encontro Libro con los siguentes datos: " + entrada + "\n"
                                 + "\nIntentelo de nuevo: ");

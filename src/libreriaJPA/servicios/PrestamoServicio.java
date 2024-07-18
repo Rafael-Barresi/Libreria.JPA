@@ -52,8 +52,16 @@ public class PrestamoServicio extends DAO<Prestamo> {
             Cliente cliente;
             //Devuelve objeto Cliente valido para recibir prestamo.
             cliente = clienteServicio.validarClienteParaPrestamo();
-            prestamo.setCliente(cliente);
-
+            
+            if (cliente == null) {
+              //Termina metodo prestamo
+                System.out.println("\n***** PRESTAMO CANCELADO *****");
+              return;
+           
+            } else {
+                 prestamo.setCliente(cliente);
+            }
+           
             //Carga libro 
             Libro libro;
             while (true) {

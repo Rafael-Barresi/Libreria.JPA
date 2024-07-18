@@ -229,7 +229,7 @@ public class ClienteServicio {
     /**
      * Devuelve un cliente válido para realizar un préstamo, en caso de no
      * existir ofrece la opción de registrar uno nuevo.
-     *
+     * Maneja cliente inexistente
      * @return Cliente
      * @throws Exception
      */
@@ -258,8 +258,7 @@ public class ClienteServicio {
                             + dni + "\n"
                             + "Respuesta por si o no:");
 
-                    String respuesta;
-                    respuesta = verificarRespuestaPorSiNo();
+                    String respuesta = verificarRespuestaPorSiNo();
 
                     if (respuesta.equalsIgnoreCase("si")) {
 
@@ -271,11 +270,12 @@ public class ClienteServicio {
                             cliente = crearCliente(documento);
                             break;
                         } else {
-                            break;
+                           return null;
                         }
 
                     } else {
-                        System.out.println("\n" + "Ingrese numero de documento: ");
+                        System.out.println("\n" + "Fin del prestamo. ");
+                        return null;
                     }
 
                 } else {
