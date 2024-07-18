@@ -22,3 +22,4 @@ Requisitos
 Java Development Kit (JDK) 17
 JPA (Java Persistence API)
 Base de Datos: Configurada para utilizar JPA con una base de datos en memoria (H2) para pruebas y desarrollo.
+Se adjunta Script con ejemplos para prueba.
